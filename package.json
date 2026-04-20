@@ -1,0 +1,7 @@
+{
+  "name": "sistema-asistencia-root",
+  "version": "1.0.0",
+  "scripts": {
+    "dev-backend": "cd backend && node server.js"
+  }
+}

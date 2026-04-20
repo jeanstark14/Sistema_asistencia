@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulador de Biométrico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --primary: #0284c7;
+        --primary-light: #0ea5e9;
+        --primary-dark: #0369a1;
+        --secondary: #7dd3fc;
+        --accent: #38bdf8;
+        --bg-dark: #0c1929;
+        --bg-card: #0f2744;
+        --bg-card-hover: #153352;
+        --text: #f0f9ff;
+        --text-muted: #94a3b8;
+        --text-dark: #1e293b;
+        --border: rgba(148, 163, 184, 0.15);
+        --success: #10b981;
+        --error: #ef4444;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --glass: rgba(15, 39, 68, 0.85);
+      }
+      
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        background: 
+          radial-gradient(ellipse at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 80%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+          linear-gradient(180deg, #0c1929 0%, #0f2744 100%);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 2rem;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+      }
+
+      .header p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+      }
+
+      .card {
+        background: var(--glass);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.25rem;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        border-color: rgba(56, 189, 248, 0.3);
+        box-shadow: 0 8px 32px rgba(14, 165, 233, 0.1);
+      }
+
+      .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--secondary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .card-title::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(180deg, #38bdf8, #0284c7);
+        border-radius: 2px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+      }
+      
+      .form-group {
+        margin-bottom: 0.75rem;
+      }
+      
+      label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      
+      input, select {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        background: rgba(12, 25, 41, 0.6);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text);
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        outline: none;
+      }
+
+      input:focus, select:focus {
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        background: rgba(12, 25, 41, 0.8);
+      }
+
+      input[readonly] {
+        background: rgba(2, 132, 199, 0.1);
+        border-color: rgba(2, 132, 199, 0.3);
+        color: var(--secondary);
+      }
+
+      select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        padding-right: 2.5rem;
+      }
+
+      select option {
+        background: var(--bg-card);
+        color: var(--text);
+      }
+      
+      button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 10px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+      
+      .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      }
+      
+      .btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.45);
+      }
+
+      .btn-secondary {
+        background: rgba(148, 163, 184, 0.1);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      
+      .btn-secondary:hover {
+        background: rgba(148, 163, 184, 0.2);
+        color: var(--text);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+      }
+
+      .btn-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+      }
+
+      .btn-info {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      .btn-full {
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+
+      .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+
+      .quick-actions button {
+        padding: 0.6rem 0.5rem;
+        font-size: 0.8rem;
+      }
+
+      #status-box {
+        margin-top: 1rem;
+        padding: 1rem;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        display: none;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .status-success { 
+        background: rgba(16, 185, 129, 0.15); 
+        border: 1px solid rgba(16, 185, 129, 0.3); 
+        color: #34d399; 
+      }
+      .status-error { 
+        background: rgba(239, 68, 68, 0.15); 
+        border: 1px solid rgba(239, 68, 68, 0.3); 
+        color: #f87171; 
+      }
+      .status-warning { 
+        background: rgba(245, 158, 11, 0.15); 
+        border: 1px solid rgba(245, 158, 11, 0.3); 
+        color: #fbbf24; 
+      }
+      .status-info { 
+        background: rgba(59, 130, 246, 0.15); 
+        border: 1px solid rgba(59, 130, 246, 0.3); 
+        color: #60a5fa; 
+      }
+
+      .turno-box {
+        background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(14, 165, 233, 0.1) 100%);
+        border: 1px solid rgba(2, 132, 199, 0.25);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .turno-box h3 {
+        font-size: 0.85rem;
+        color: var(--secondary);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .turno-box .turno-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        margin-bottom: 0.25rem;
+      }
+
+      .turno-box .turno-schedule {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--accent);
+        margin-top: 0.5rem;
+      }
+
+      .turno-box .info-row {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .asistencia-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+
+      .asistencia-item {
+        background: rgba(12, 25, 41, 0.4);
+        border-radius: 10px;
+        padding: 0.75rem;
+        text-align: center;
+      }
+
+      .asistencia-item .label {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+      }
+
+      .asistencia-item .value {
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .asistencia-item .value.pending { color: var(--text-muted); }
+      .asistencia-item .value.done { color: var(--success); }
+      .asistencia-item .value.active { color: var(--accent); }
+
+      .next-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        background: rgba(56, 189, 248, 0.15);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: var(--secondary);
+        margin-top: 0.75rem;
+      }
+
+      .log-box {
+        background: rgba(12, 25, 41, 0.5);
+        border-radius: 10px;
+        padding: 1rem;
+        max-height: 180px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Consolas', monospace;
+        font-size: 0.75rem;
+      }
+
+      .log-box .entry {
+        padding: 0.3rem 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .log-box .entry:last-child { border-bottom: none; }
+      .log-box .time { color: var(--text-muted); }
+      .log-box .success { color: var(--success); }
+      .log-box .error { color: var(--error); }
+      .log-box .info { color: var(--accent); }
+
+      .info-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+      }
+
+      .hidden { display: none !important; }
+
+      @media (max-width: 768px) {
+        .grid-2, .grid-3, .grid-4, .quick-actions, .asistencia-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        body { padding: 1rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Simulador de Biométrico</h1>
+        <p>Panel de pruebas para el sistema de control de asistencia</p>
+      </div>
+
+      <div class="card">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Servidor API</label>
+            <input type="text" id="api_url" placeholder="http://localhost:4000">
+            <span class="info-badge" id="host-info">Detectando...</span>
+          </div>
+          <div class="form-group">
+            <label>API Key</label>
+            <input type="text" id="api_key" value="biometric_key_segura_2024">
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label>Device UID</label>
+            <input type="text" id="device_uid" value="SIMULADOR_X1">
+          </div>
+          <div class="form-group">
+            <label>Fecha de Prueba</label>
+            <input type="date" id="fecha">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn-secondary" onclick="cargarEmpleados()">🔄 Cargar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="empleado-card">
+        <div class="card-title">👤 Seleccionar Empleado</div>
+        <div class="form-group">
+          <select id="empleado_select" onchange="cargarDatosEmpleado()">
+            <option value="">-- Seleccionar empleado --</option>
+          </select>
+        </div>
+
+        <div class="turno-box hidden" id="turno-display">
+          <h3>📅 Turno Asignado</h3>
+          <div class="turno-name" id="turno-nombre">-</div>
+          <div class="turno-schedule" id="turno-horario">--:-- a --:--</div>
+          <div class="info-row">
+            <span>📂 <span id="turno-area">-</span></span>
+            <span>💼 <span id="turno-cargo">-</span></span>
+          </div>
+        </div>
+
+        <div class="turno-box hidden" id="asistencia-display" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%); border-color: rgba(16, 185, 129, 0.25);">
+          <h3 style="color: #34d399;">✅ Asistencia de Hoy</h3>
+          <div class="asistencia-grid">
+            <div class="asistencia-item">
+              <div class="label">Entrada 1</div>
+              <div class="value pending" id="asis-entrada1">--:--</div>
+            </div>
+            <div class="asistencia-item">
+              <div class="label">Salida 1</div>
+              <div class="value pending" id="asis-salida1">--:--</div>
+            </div>
+            <div class="asistencia-item">
+              <div class="label">Entrada 2</div>
+              <div class="value pending" id="asis-entrada2">--:--</div>
+            </div>
+            <div class="asistencia-item">
+              <div class="label">Salida 2</div>
+              <div class="value pending" id="asis-salida2">--:--</div>
+            </div>
+          </div>
+          <div class="next-badge" id="next-badge">
+            <span>⏭️</span>
+            <span id="next-text">Próxima: Entrada 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🎯 Registrar Marcación</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Código de Empleado</label>
+            <input type="text" id="employee_code" readonly placeholder="Seleccione un empleado">
+          </div>
+          <div class="form-group">
+            <label>Tipo de Marcación</label>
+            <select id="event_type">
+              <option value="entrada">Entrada (Mañana)</option>
+              <option value="salida">Salida (Almuerzo)</option>
+              <option value="entrada2">Entrada (Tarde)</option>
+              <option value="salida2">Salida (Fin Día)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Fecha/Hora</label>
+            <input type="datetime-local" id="timestamp">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn-secondary" onclick="usarHoraActual()">🕐 Ahora</button>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="btn-success" onclick="marcacionRapida('entrada')">✅ Entrada</button>
+          <button class="btn-warning" onclick="marcacionRapida('salida')">⏸️ Salida</button>
+          <button class="btn-info" onclick="marcacionRapida('entrada2')">🔃 Entrada 2</button>
+          <button class="btn-secondary" onclick="marcacionRapida('salida2')">🏁 Salida 2</button>
+        </div>
+
+        <button class="btn-primary btn-full" id="submit-btn" onclick="sendEvent()">
+          📤 Registrar Marcación
+        </button>
+        <div id="status-box"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Log de Actividad</div>
+        <button class="btn-secondary" onclick="limpiarLog()" style="margin-bottom: 0.75rem; padding: 0.4rem 0.75rem; font-size: 0.75rem;">🗑️ Limpiar</button>
+        <div class="log-box" id="log-box">
+          <div class="entry"><span class="time">--:--:--</span> <span class="info">Sistema listo. Seleccione un empleado.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      let empleadosData = [];
+
+      window.onload = () => {
+        const apiUrlInput = document.getElementById('api_url');
+        const hostInfo = document.getElementById('host-info');
+        const fechaInput = document.getElementById('fecha');
+        
+        const hoy = new Date();
+        fechaInput.value = hoy.toISOString().split('T')[0];
+        
+        if (window.location.protocol.startsWith('http')) {
+          const baseUrl = `${window.location.protocol}//${window.location.host}`;
+          apiUrlInput.value = baseUrl;
+          hostInfo.textContent = "✓ Conectado";
+          hostInfo.style.color = "#10b981";
+        } else {
+          apiUrlInput.value = "http://localhost:4000";
+          hostInfo.textContent = "Modo local";
+        }
+
+        cargarEmpleados();
+      };
+
+      async function cargarEmpleados() {
+        const apiUrl = document.getElementById('api_url').value.replace(/\/$/, "");
+        const fecha = document.getElementById('fecha').value || new Date().toISOString().split('T')[0];
+
+        addLog('info', `Cargando empleados para ${fecha}...`);
+
+        try {
+          const response = await fetch(`${apiUrl}/api/biometrico/empleados?fecha=${fecha}`, {
+            headers: { "X-API-KEY": document.getElementById('api_key').value }
+          });
+          
+          if (!response.ok) throw new Error('Error al cargar');
+          
+          const data = await response.json();
+          empleadosData = data.empleados;
+          
+          const select = document.getElementById('empleado_select');
+          select.innerHTML = '<option value="">-- Seleccionar empleado --</option>';
+          
+          data.empleados.forEach(emp => {
+            const option = document.createElement('option');
+            option.value = emp.id;
+            const turnoInfo = emp.turno ? ` [${emp.turno.hora_inicio}-${emp.turno.hora_fin}]` : ' [Sin turno]';
+            option.textContent = `${emp.apellidos}, ${emp.nombres} (${emp.codigo_interno})${turnoInfo}`;
+            option.dataset.codigo = emp.codigo_interno;
+            option.dataset.turno = JSON.stringify(emp.turno);
+            option.dataset.area = emp.area;
+            option.dataset.cargo = emp.cargo;
+            select.appendChild(option);
+          });
+
+          addLog('success', `✓ ${data.empleados.length} empleados cargados (${DIAS[data.dia_semana]})`);
+        } catch (err) {
+          addLog('error', `Error: ${err.message}`);
+        }
+      }
+
+      function cargarDatosEmpleado() {
+        const select = document.getElementById('empleado_select');
+        const option = select.options[select.selectedIndex];
+        
+        if (!option.value) {
+          document.getElementById('turno-display').classList.add('hidden');
+          document.getElementById('asistencia-display').classList.add('hidden');
+          document.getElementById('employee_code').value = '';
+          return;
+        }
+
+        document.getElementById('employee_code').value = option.dataset.codigo;
+        
+        const turno = JSON.parse(option.dataset.turno || 'null');
+        const turnoDisplay = document.getElementById('turno-display');
+        
+        if (turno) {
+          document.getElementById('turno-nombre').textContent = turno.nombre;
+          document.getElementById('turno-horario').textContent = `${turno.hora_inicio} - ${turno.hora_fin}`;
+        } else {
+          document.getElementById('turno-nombre').textContent = 'Sin turno asignado';
+          document.getElementById('turno-horario').textContent = 'Sin horario';
+        }
+        
+        document.getElementById('turno-area').textContent = option.dataset.area || '-';
+        document.getElementById('turno-cargo').textContent = option.dataset.cargo || '-';
+        turnoDisplay.classList.remove('hidden');
+
+        cargarAsistenciaActual(option.value);
+      }
+
+      async function cargarAsistenciaActual(empleadoId) {
+        const apiUrl = document.getElementById('api_url').value.replace(/\/$/, "");
+        
+        try {
+          const response = await fetch(`${apiUrl}/api/biometrico/asistencia-actual?empleado_id=${empleadoId}`, {
+            headers: { "X-API-KEY": document.getElementById('api_key').value }
+          });
+          
+          const data = await response.json();
+          const asisDisplay = document.getElementById('asistencia-display');
+          
+          if (!data.tiene_asistencia) {
+            asisDisplay.classList.add('hidden');
+            return;
+          }
+          
+          asisDisplay.classList.remove('hidden');
+          const asis = data.asistencia;
+          const siguiente = data.siguiente_marcacion;
+          
+          const setValue = (id, value, done) => {
+            const el = document.getElementById(id);
+            if (value) {
+              const date = new Date(value);
+              el.textContent = date.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit', hour12: false});
+              el.className = 'value done';
+            } else {
+              el.textContent = '--:--';
+              el.className = 'value pending';
+            }
+          };
+          
+          setValue('asis-entrada1', asis.hora_entrada);
+          setValue('asis-salida1', asis.hora_salida);
+          setValue('asis-entrada2', asis.hora_entrada_2);
+          setValue('asis-salida2', asis.hora_salida_2);
+          
+          const labels = { entrada: 'Entrada 1', salida: 'Salida 1', entrada2: 'Entrada 2', salida2: 'Salida 2' };
+          document.getElementById('next-text').textContent = labels[siguiente] || 'Completo';
+          
+        } catch (err) {
+          console.error('Error:', err);
+        }
+      }
+
+      function usarHoraActual() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('timestamp').value = now.toISOString().slice(0, 16);
+      }
+
+      function marcacionRapida(tipo) {
+        const select = document.getElementById('empleado_select');
+        if (!select.value) {
+          showStatus('Seleccione un empleado primero', 'error');
+          return;
+        }
+        
+        document.getElementById('event_type').value = tipo;
+        
+        const option = select.options[select.selectedIndex];
+        const turno = JSON.parse(option.dataset.turno || 'null');
+        
+        if (turno && !document.getElementById('timestamp').value) {
+          const ahora = new Date();
+          let horaSugerida = '';
+          
+          switch(tipo) {
+            case 'entrada': horaSugerida = turno.hora_inicio; break;
+            case 'salida': horaSugerida = turno.hora_fin; break;
+            case 'entrada2': horaSugerida = turno.hora_fin; break;
+            case 'salida2': horaSugerida = turno.hora_fin; break;
+          }
+          
+          if (horaSugerida) {
+            const [h, m] = horaSugerida.split(':');
+            ahora.setHours(parseInt(h), parseInt(m), 0, 0);
+            ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+            document.getElementById('timestamp').value = ahora.toISOString().slice(0, 16);
+            addLog('info', `Hora sugerida: ${horaSugerida}`);
+          }
+        } else if (!document.getElementById('timestamp').value) {
+          usarHoraActual();
+        }
+        
+        sendEvent();
+      }
+
+      async function sendEvent() {
+        const btn = document.getElementById("submit-btn");
+        const statusBox = document.getElementById("status-box");
+        const apiUrl = document.getElementById("api_url").value.replace(/\/$/, "");
+        const apiKey = document.getElementById("api_key").value;
+
+        const payload = {
+          device_uid: document.getElementById("device_uid").value,
+          employee_code: document.getElementById("employee_code").value,
+          event_type: document.getElementById("event_type").value,
+          timestamp: document.getElementById("timestamp").value ? document.getElementById("timestamp").value.replace('T', ' ') + ':00' : null,
+          method: "web_simulator",
+        };
+
+        if (!payload.employee_code) {
+          showStatus("Seleccione un empleado", "error");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "⏳ Procesando...";
+        statusBox.style.display = "none";
+
+        try {
+          const response = await fetch(`${apiUrl}/api/biometrico/evento`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+          
+          if (response.ok) {
+            showStatus(`✓ Marcación registrada: ${payload.event_type.toUpperCase()}`, "success");
+            addLog('success', `[${payload.event_type.toUpperCase()}] ${payload.employee_code}`);
+            
+            setTimeout(() => {
+              cargarAsistenciaActual(document.getElementById('empleado_select').value);
+            }, 500);
+          } else {
+            showStatus(`✕ Error: ${data.error || data.detalle}`, "error");
+            addLog('error', `${data.error || data.detalle}`);
+          }
+        } catch (err) {
+          showStatus(`✕ Error: ${err.message}`, "error");
+          addLog('error', err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "📤 Registrar Marcación";
+        }
+      }
+
+      function showStatus(msg, type) {
+        const statusBox = document.getElementById("status-box");
+        statusBox.textContent = msg;
+        statusBox.className = `status-${type}`;
+        statusBox.style.display = "block";
+      }
+
+      function addLog(type, message) {
+        const logBox = document.getElementById('log-box');
+        const now = new Date().toLocaleTimeString('es-PE');
+        const entry = document.createElement('div');
+        entry.className = 'entry';
+        entry.innerHTML = `<span class="time">${now}</span> <span class="${type}">${message}</span>`;
+        logBox.insertBefore(entry, logBox.firstChild);
+      }
+
+      function limpiarLog() {
+        document.getElementById('log-box').innerHTML = '';
+        addLog('info', 'Log limpiado');
+      }
+
+      document.getElementById('fecha').addEventListener('change', cargarEmpleados);
+    </script>
+  </body>
+</html>
