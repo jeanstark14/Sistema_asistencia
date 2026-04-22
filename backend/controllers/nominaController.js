@@ -51,8 +51,9 @@ exports.descargarBoleta = async (req, res) => {
 
         const data = nominas[0];
 
-        // Seguridad: Si es Rol Empleado, solo puede ver la suya
-        if (req.user.rol === 'Empleado' && req.user.id !== data.empleado_id) {
+        // Seguridad: Si no es un rol administrativo/jefatura, solo puede ver la suya propia
+        const rolesAdministrativos = ['Administrador', 'Gerente', 'Jefe'];
+        if (!rolesAdministrativos.includes(req.user.rol) && req.user.empleado_id !== data.empleado_id) {
             return res.status(403).json({ error: 'No tienes permiso para ver esta boleta' });
         }
 
@@ -77,13 +78,44 @@ exports.descargarBoleta = async (req, res) => {
 };
 
 exports.listarRecientes = async (req, res) => {
+    const { periodo } = req.query; // Opcional: '2026-03'
+
+    try {
+        let query = `
+            SELECT n.*, e.nombres, e.apellidos, e.dni, e.codigo_interno 
+            FROM nominas n 
+            JOIN empleados e ON n.empleado_id = e.id 
+        `;
+        let params = [];
+
+        if (periodo) {
+            query += ' WHERE n.periodo = ? ';
+            params.push(periodo);
+        }
+
+        query += ' ORDER BY n.periodo DESC, n.created_at DESC LIMIT 100';
+
+        const [nominas] = await pool.execute(query, params);
+        res.json(nominas);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.listarMisBoletas = async (req, res) => {
+    const empleadoId = req.user.empleado_id;
+
+    if (!empleadoId) {
+        return res.status(400).json({ error: 'El usuario no tiene un perfil de empleado asociado' });
+    }
+
     try {
         const [nominas] = await pool.execute(
-            `SELECT n.*, e.nombres, e.apellidos, e.dni, e.codigo_interno 
-             FROM nominas n 
-             JOIN empleados e ON n.empleado_id = e.id 
-             ORDER BY n.created_at DESC 
-             LIMIT 50`
+            `SELECT id, periodo, total_pagar, estado, created_at 
+             FROM nominas 
+             WHERE empleado_id = ? 
+             ORDER BY periodo DESC`,
+            [empleadoId]
         );
         res.json(nominas);
     } catch (error) {

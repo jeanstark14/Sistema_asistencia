@@ -444,64 +444,7 @@ const Schedules = () => {
                                         <p className="text-[10px] text-slate-500 italic pl-1">* Si no seleccionas ningún día, se aplicará a toda la semana por defecto.</p>
                                     </div>
 
-                                    <div className="p-6 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10 space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${assignData.usar_personalizado ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}`}>
-                                                    <Clock size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-black text-white italic uppercase">¿Horario Personalizado?</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Activa para ignorar las horas del turno base</p>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                type="button"
-                                                onClick={togglePersonalized}
-                                                className={`w-14 h-8 rounded-full relative transition-all duration-300 ${assignData.usar_personalizado ? 'bg-indigo-600' : 'bg-slate-800'}`}
-                                            >
-                                                <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 ${assignData.usar_personalizado ? 'left-7' : 'left-1'}`} />
-                                            </button>
-                                        </div>
 
-                                        {!assignData.usar_personalizado && assignData.turno_id && (
-                                            <div className="flex items-center gap-4 text-[10px] font-bold text-slate-500 bg-slate-900/50 p-3 rounded-xl border border-white/5 italic">
-                                                <span>✓ Usando horario base:</span>
-                                                {(() => {
-                                                    const s = schedules.find(sh => sh.id === parseInt(assignData.turno_id));
-                                                    return s ? (
-                                                        <span className="text-indigo-400">
-                                                            {s.hora_inicio.substring(0,5)} - {s.hora_fin.substring(0,5)} 
-                                                            {parseFloat(s.horas_refrigerio) > 0 ? ` (${s.horas_refrigerio}hr refrig.)` : ' (Sin refrig.)'}
-                                                        </span>
-                                                    ) : null;
-                                                })()}
-                                            </div>
-                                        )}
-
-                                        {assignData.usar_personalizado && (
-                                            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/5">
-                                                <InputField label="Hora Inicio" type="time" value={assignData.hora_inicio} onChange={e => setAssignData({...assignData, hora_inicio: e.target.value})} required={assignData.usar_personalizado} />
-                                                <InputField label="Hora Fin" type="time" value={assignData.hora_fin} onChange={e => setAssignData({...assignData, hora_fin: e.target.value})} required={assignData.usar_personalizado} />
-                                                
-                                                <div className="pt-2 md:col-span-1">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <span className="text-[10px] font-black text-slate-500 uppercase">¿Refrigerio?</span>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setAssignData({...assignData, has_refrigerio: !assignData.has_refrigerio})}
-                                                            className={`w-8 h-5 rounded-full relative transition-all ${assignData.has_refrigerio ? 'bg-indigo-600' : 'bg-slate-800'}`}
-                                                        >
-                                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${assignData.has_refrigerio ? 'left-3.5' : 'left-0.5'}`} />
-                                                        </button>
-                                                    </div>
-                                                    {assignData.has_refrigerio && (
-                                                        <InputField label="Hrs" type="number" step="0.5" value={assignData.horas_refrigerio} onChange={e => setAssignData({...assignData, horas_refrigerio: e.target.value})} required={assignData.has_refrigerio && assignData.usar_personalizado} />
-                                                    )}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </div>
 
                                     <div className="flex justify-end gap-4 pt-4">
                                         <Button type="button" variant="secondary" onClick={() => setIsAssignModalOpen(false)}>Cancelar</Button>

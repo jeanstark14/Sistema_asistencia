@@ -121,12 +121,29 @@ class AsistenciaService {
                 }
                 else if (tipo === 'entrada2' && !registroExistente.hora_entrada_2) {
                     let merienda = 0;
+                    let tardanzaExtra = 0;
                     if (registroExistente.hora_salida) {
                         const salida1 = new Date(registroExistente.hora_salida);
                         merienda = Math.floor((fecha_hora - salida1) / 60000);
+                        
+                        if (turno.turno_id !== registroExistente.turno_id) {
+                            // Está iniciando un turno distinto en el mismo día (Horario Partido / Flexible)
+                            tardanzaExtra = this.calcularTardanza(fecha_hora, turno, tolerancia);
+                        } else {
+                            // Está regresando de refrigerio del mismo turno
+                            const limiteMinutos = parseFloat(turno.horas_refrigerio || 0) * 60;
+                            if (limiteMinutos > 0 && merienda > limiteMinutos) {
+                                tardanzaExtra = merienda - limiteMinutos;
+                            }
+                        }
                     }
-                    await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ? WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, id]);
-                    console.log(`[Asistencia] Entrada 2 registrada explícita para emp ${empleado_id}. Merienda: ${merienda}m`);
+                    
+                    if (tardanzaExtra > 0) {
+                        await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ?, minutos_tardanza = minutos_tardanza + ?, estado = "tardanza" WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, tardanzaExtra, id]);
+                    } else {
+                        await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ? WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, id]);
+                    }
+                    console.log(`[Asistencia] Entrada 2 registrada explícita para emp ${empleado_id}. Merienda: ${merienda}m. Tardanza extra: ${tardanzaExtra}m.`);
                 }
                 else if (tipo === 'salida2') {
                     const minutosTrabajados = await this.calcularTiempoEfectivoTotal(registroExistente, fecha_hora, turno);
@@ -142,8 +159,26 @@ class AsistenciaService {
                     else if (!registroExistente.hora_entrada_2) {
                         const salida1 = new Date(registroExistente.hora_salida);
                         const merienda = Math.floor((fecha_hora - salida1) / 60000);
-                        await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ? WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, id]);
-                        console.log(`[Asistencia] Entrada 2 registrada (Secuencial) para emp ${empleado_id}. Merienda: ${merienda}m`);
+                        let tardanzaExtra = 0;
+                        
+                        if (turno.turno_id !== registroExistente.turno_id) {
+                            // Está iniciando un turno distinto en el mismo día (Horario Partido / Flexible)
+                            tardanzaExtra = this.calcularTardanza(fecha_hora, turno, tolerancia);
+                        } else {
+                            // Está regresando de refrigerio del mismo turno
+                            const limiteMinutos = parseFloat(turno.horas_refrigerio || 0) * 60;
+                            if (limiteMinutos > 0 && merienda > limiteMinutos) {
+                                tardanzaExtra = merienda - limiteMinutos;
+                            }
+                        }
+
+                        if (tardanzaExtra > 0) {
+                            await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ?, minutos_tardanza = minutos_tardanza + ?, estado = "tardanza" WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, tardanzaExtra, id]);
+                        } else {
+                            await pool.execute('UPDATE asistencias SET hora_entrada_2 = ?, minutos_merienda = ? WHERE id = ?', [fecha_hora, merienda > 0 ? merienda : 0, id]);
+                        }
+                        
+                        console.log(`[Asistencia] Entrada 2 registrada (Secuencial) para emp ${empleado_id}. Merienda: ${merienda}m. Tardanza extra: ${tardanzaExtra}m.`);
                     }
                     else {
                         const minutosTrabajados = await this.calcularTiempoEfectivoTotal(registroExistente, fecha_hora, turno);

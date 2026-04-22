@@ -240,7 +240,7 @@ exports.obtenerAsistenciaActual = async (req, res) => {
             });
         }
 
-        const asis = asistencia[0];
+        const asis = asistencias[0];
         
         let siguienteMarcacion = null;
         if (!asis.hora_entrada) {
@@ -296,3 +296,35 @@ exports.listarLogs = async (req, res) => {
     }
 };
 
+exports.limpiarAsistencia = [validarApiKey, async (req, res) => {
+    try {
+        const { empleado_id } = req.body;
+        const fecha = new Date().toISOString().split('T')[0];
+
+        if (!empleado_id) {
+            return res.status(400).json({ error: 'empleado_id es requerido' });
+        }
+
+        // Eliminar las justificaciones de esa asistencia primero para no romper la FK
+        await pool.execute(
+            'DELETE FROM justificaciones WHERE asistencia_id IN (SELECT id FROM asistencias WHERE empleado_id = ? AND fecha = ?)',
+            [empleado_id, fecha]
+        );
+
+        // Eliminar la asistencia
+        const [result] = await pool.execute(
+            'DELETE FROM asistencias WHERE empleado_id = ? AND fecha = ?',
+            [empleado_id, fecha]
+        );
+
+        if (result.affectedRows > 0) {
+            console.log(`[Biométrico] Asistencia limpiada para emp ${empleado_id} en ${fecha}`);
+            res.json({ message: 'Marcaciones eliminadas correctamente' });
+        } else {
+            res.json({ message: 'No había marcaciones para eliminar' });
+        }
+    } catch (error) {
+        console.error('[Biométrico] Error limpiando asistencia:', error);
+        res.status(500).json({ error: error.message });
+    }
+}];

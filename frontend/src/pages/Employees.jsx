@@ -640,34 +640,7 @@ const Employees = () => {
                                         </select>
                                     </div>
 
-                                    <div className="p-6 bg-indigo-500/5 rounded-[2rem] border border-indigo-500/10 space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${assignData.usar_personalizado ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}`}>
-                                                    <Clock size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-black text-white italic uppercase">¿Horario Personalizado?</p>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Activa para ignorar las horas del turno base</p>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setAssignData({...assignData, usar_personalizado: !assignData.usar_personalizado})}
-                                                className={`w-14 h-8 rounded-full relative transition-all duration-300 ${assignData.usar_personalizado ? 'bg-indigo-600' : 'bg-slate-800'}`}
-                                            >
-                                                <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 ${assignData.usar_personalizado ? 'left-7' : 'left-1'}`} />
-                                            </button>
-                                        </div>
 
-                                        {assignData.usar_personalizado && (
-                                            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/5">
-                                                <InputField label="Hora Inicio" type="time" value={assignData.hora_inicio} onChange={e => setAssignData({...assignData, hora_inicio: e.target.value})} required={assignData.usar_personalizado} />
-                                                <InputField label="Hora Fin" type="time" value={assignData.hora_fin} onChange={e => setAssignData({...assignData, hora_fin: e.target.value})} required={assignData.usar_personalizado} />
-                                                <InputField label="Refrigerio (Hr)" type="number" step="0.5" value={assignData.refrigerio} onChange={e => setAssignData({...assignData, refrigerio: e.target.value})} required={assignData.usar_personalizado} />
-                                            </motion.div>
-                                        )}
-                                    </div>
 
                                     <div className="flex justify-end gap-4 pt-4">
                                         <Button type="button" variant="secondary" onClick={() => setIsAssignModalOpen(false)}>Cancelar</Button>

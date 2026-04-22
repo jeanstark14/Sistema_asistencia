@@ -30,15 +30,21 @@ const Payroll = () => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
+    const [filterPeriodo, setFilterPeriodo] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
 
     useEffect(() => {
-        fetchNominas();
-    }, []);
+        fetchNominas(filterPeriodo);
+    }, [filterPeriodo]);
 
-    const fetchNominas = async () => {
+    const fetchNominas = async (filter = '') => {
         setLoading(true);
         try {
-            const response = await client.get('/nomina/recente');
+            const response = await client.get('/nomina/recente', {
+                params: { periodo: filter }
+            });
             setNominas(response.data || []);
         } catch (error) {
             console.error('Error fetching nominas:', error);
@@ -53,7 +59,10 @@ const Payroll = () => {
         try {
             const response = await client.post('/nomina/generar', { periodo });
             toast.success(`Nómina de ${periodo} generada exitosamente`);
-            fetchNominas();
+            // Si el periodo generado es el mismo que estamos filtrando, actualizamos la lista
+            if (periodo === filterPeriodo) {
+                fetchNominas(filterPeriodo);
+            }
         } catch (error) {
             console.error('Error generating payroll:', error);
             const msg = error.response?.data?.error || 'Error al generar la nómina';
@@ -175,13 +184,25 @@ const Payroll = () => {
                         />
                     </div>
                     
-                    <button 
-                        onClick={fetchNominas}
-                        className="flex items-center gap-2 px-6 py-3 bg-white/5 rounded-2xl text-slate-400 hover:text-white transition-all font-bold text-xs"
-                    >
-                        <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
-                        Actualizar Lista
-                    </button>
+                    <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                        <div className="relative">
+                            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" size={18} />
+                            <input 
+                                type="month" 
+                                value={filterPeriodo}
+                                onChange={(e) => setFilterPeriodo(e.target.value)}
+                                className="bg-slate-950/50 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white font-bold text-xs focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
+                            />
+                        </div>
+                        
+                        <button 
+                            onClick={() => fetchNominas(filterPeriodo)}
+                            className="flex items-center gap-2 px-6 py-3 bg-white/5 rounded-2xl text-slate-400 hover:text-white transition-all font-bold text-xs"
+                        >
+                            <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
+                            Actualizar
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">

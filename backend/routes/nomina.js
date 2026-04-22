@@ -8,10 +8,13 @@ const roleMiddleware = require('../middlewares/roleMiddleware');
 router.post('/generar', authMiddleware, roleMiddleware(['Administrador', 'Gerente']), nominaController.generar);
 
 // Admin, Gerente, Jefe pueden descargar cualquier boleta
-// Empleado podrá descargar la suya (validado en el controller)
-router.get('/boleta/:id', authMiddleware, roleMiddleware(['Administrador', 'Gerente', 'Jefe', 'Empleado']), nominaController.descargarBoleta);
+// Otros roles podrán descargar solo la suya (validado en el controller)
+router.get('/boleta/:id', authMiddleware, roleMiddleware(['Administrador', 'Gerente', 'Jefe', 'Empleado', 'Monitor', 'Practicante']), nominaController.descargarBoleta);
 
 // Listar nóminas recientes
 router.get('/recente', authMiddleware, roleMiddleware(['Administrador', 'Gerente', 'Jefe']), nominaController.listarRecientes);
+
+// Listar boletas propias (Cualquier usuario autenticado con perfil de empleado)
+router.get('/mis-boletas', authMiddleware, nominaController.listarMisBoletas);
 
 module.exports = router;

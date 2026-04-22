@@ -450,7 +450,10 @@
         </div>
 
         <div class="turno-box hidden" id="asistencia-display" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%); border-color: rgba(16, 185, 129, 0.25);">
-          <h3 style="color: #34d399;">✅ Asistencia de Hoy</h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="color: #34d399; margin: 0;">✅ Asistencia de Hoy</h3>
+            <button class="btn-error" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="limpiarAsistenciaHoy()" title="Eliminar las marcaciones de hoy para este empleado">🗑️ Limpiar</button>
+          </div>
           <div class="asistencia-grid">
             <div class="asistencia-item">
               <div class="label">Entrada 1</div>
@@ -759,6 +762,49 @@
         } finally {
           btn.disabled = false;
           btn.textContent = "📤 Registrar Marcación";
+        }
+      }
+
+      async function limpiarAsistenciaHoy() {
+        const select = document.getElementById('empleado_select');
+        if (!select.value) return;
+
+        if (!confirm('¿Estás seguro que deseas ELIMINAR TODAS las marcaciones de hoy para este empleado? Esto no se puede deshacer.')) return;
+
+        const btn = document.querySelector('.btn-error');
+        const oldText = btn.textContent;
+        btn.textContent = '⏳...';
+        btn.disabled = true;
+
+        const apiUrl = document.getElementById("api_url").value.replace(/\/$/, "");
+        const apiKey = document.getElementById("api_key").value;
+
+        try {
+          const response = await fetch(`${apiUrl}/api/biometrico/limpiar-asistencia`, {
+            method: "DELETE",
+            headers: { 
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify({ empleado_id: select.value }),
+          });
+
+          const data = await response.json();
+          
+          if (response.ok) {
+            showStatus(`✓ ${data.message}`, "success");
+            addLog('info', `Marcaciones de hoy eliminadas para ${select.options[select.selectedIndex].dataset.codigo}`);
+            setTimeout(() => {
+              cargarAsistenciaActual(select.value);
+            }, 500);
+          } else {
+            showStatus(`✕ Error: ${data.error || data.message}`, "error");
+          }
+        } catch (err) {
+          showStatus(`✕ Error: ${err.message}`, "error");
+        } finally {
+          btn.textContent = oldText;
+          btn.disabled = false;
         }
       }
 
