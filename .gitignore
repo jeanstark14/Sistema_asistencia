@@ -29,3 +29,7 @@ logs/
 # Database sql dumps (opcional, si no quieres subirlas)
 # *.sql
 !ubigeo_peru_districts.sql # Mantener esta si es necesaria para la app
+
+# Scratch & Temporary
+scratch/
+backend/scratch/

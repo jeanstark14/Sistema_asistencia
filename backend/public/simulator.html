@@ -386,6 +386,25 @@
         margin-top: 0.25rem;
       }
 
+      .btn-delete-marking {
+        background: none;
+        border: none;
+        color: var(--error);
+        cursor: pointer;
+        font-size: 0.7rem;
+        padding: 2px 4px;
+        margin-left: 4px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+      }
+
+      .btn-delete-marking:hover {
+        background: rgba(239, 68, 68, 0.15);
+      }
+
       .hidden { display: none !important; }
 
       @media (max-width: 768px) {
@@ -642,11 +661,12 @@
           const asis = data.asistencia;
           const siguiente = data.siguiente_marcacion;
           
-          const setValue = (id, value, done) => {
+          const setValue = (id, value, tipo) => {
             const el = document.getElementById(id);
             if (value) {
               const date = new Date(value);
-              el.textContent = date.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit', hour12: false});
+              const timeStr = date.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit', hour12: false});
+              el.innerHTML = `${timeStr} <button class="btn-delete-marking" onclick="eliminarMarcacionEspecifica('${tipo}')" title="Eliminar marcación">❌</button>`;
               el.className = 'value done';
             } else {
               el.textContent = '--:--';
@@ -654,10 +674,10 @@
             }
           };
           
-          setValue('asis-entrada1', asis.hora_entrada);
-          setValue('asis-salida1', asis.hora_salida);
-          setValue('asis-entrada2', asis.hora_entrada_2);
-          setValue('asis-salida2', asis.hora_salida_2);
+          setValue('asis-entrada1', asis.hora_entrada, 'entrada');
+          setValue('asis-salida1', asis.hora_salida, 'salida');
+          setValue('asis-entrada2', asis.hora_entrada_2, 'entrada2');
+          setValue('asis-salida2', asis.hora_salida_2, 'salida2');
           
           const labels = { entrada: 'Entrada 1', salida: 'Salida 1', entrada2: 'Entrada 2', salida2: 'Salida 2' };
           document.getElementById('next-text').textContent = labels[siguiente] || 'Completo';
@@ -805,6 +825,44 @@
         } finally {
           btn.textContent = oldText;
           btn.disabled = false;
+        }
+      }
+
+      async function eliminarMarcacionEspecifica(tipo) {
+        const select = document.getElementById('empleado_select');
+        if (!select.value) return;
+
+        if (!confirm(`¿Estás seguro que deseas eliminar la marcación de ${tipo.toUpperCase()}?`)) return;
+
+        const apiUrl = document.getElementById("api_url").value.replace(/\/$/, "");
+        const apiKey = document.getElementById("api_key").value;
+
+        try {
+          const response = await fetch(`${apiUrl}/api/biometrico/eliminar-marcacion`, {
+            method: "DELETE",
+            headers: { 
+              "Content-Type": "application/json",
+              "X-API-KEY": apiKey
+            },
+            body: JSON.stringify({ 
+              empleado_id: select.value,
+              tipo_marcacion: tipo
+            }),
+          });
+
+          const data = await response.json();
+          
+          if (response.ok) {
+            showStatus(`✓ Marcación de ${tipo.toUpperCase()} eliminada`, "success");
+            addLog('info', `Marcación ${tipo.toUpperCase()} eliminada para ${select.options[select.selectedIndex].dataset.codigo}`);
+            setTimeout(() => {
+              cargarAsistenciaActual(select.value);
+            }, 500);
+          } else {
+            showStatus(`✕ Error: ${data.error || data.message}`, "error");
+          }
+        } catch (err) {
+          showStatus(`✕ Error: ${err.message}`, "error");
         }
       }
 

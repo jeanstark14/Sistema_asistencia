@@ -39,7 +39,7 @@ exports.login = async (req, res) => {
                 rol: user.rol_nombre,
                 empleado_id: user.empleado_id
             },
-            process.env.JWT_SECRET || 'secret_key_temporal',
+            process.env.JWT_SECRET,
             { expiresIn: '8h' }
         );
 
@@ -52,7 +52,8 @@ exports.login = async (req, res) => {
                 id: user.id,
                 nombre: user.nombre,
                 email: user.email,
-                rol: user.rol_nombre
+                rol: user.rol_nombre,
+                empleado_id: user.empleado_id
             }
         });
 

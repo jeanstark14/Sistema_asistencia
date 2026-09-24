@@ -444,7 +444,76 @@ const Schedules = () => {
                                         <p className="text-[10px] text-slate-500 italic pl-1">* Si no seleccionas ningún día, se aplicará a toda la semana por defecto.</p>
                                     </div>
 
+                                    {/* Personalización de Horario */}
+                                    {assignData.turno_id && (
+                                        <div className="p-5 bg-slate-950/50 rounded-2xl border border-white/5 space-y-5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all ${assignData.usar_personalizado ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-slate-800 text-slate-500 border-white/5'}`}>
+                                                        <Clock size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-white font-black italic uppercase text-[10px]">¿Personalizar Horas?</p>
+                                                        <p className="text-[9px] text-slate-500">Sobrescribir horas del turno base para esta asignación</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button"
+                                                    onClick={togglePersonalized}
+                                                    className={`w-10 h-6 rounded-full relative transition-all duration-300 ${assignData.usar_personalizado ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${assignData.usar_personalizado ? 'left-5' : 'left-1'}`} />
+                                                </button>
+                                            </div>
 
+                                            {assignData.usar_personalizado && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, height: 0 }} 
+                                                    animate={{ opacity: 1, height: 'auto' }} 
+                                                    className="space-y-4 pt-2"
+                                                >
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <InputField 
+                                                            label="Hora Inicio Personalizada" 
+                                                            type="time" 
+                                                            value={assignData.hora_inicio} 
+                                                            onChange={e => setAssignData({...assignData, hora_inicio: e.target.value})} 
+                                                            required 
+                                                        />
+                                                        <InputField 
+                                                            label="Hora Fin Personalizada" 
+                                                            type="time" 
+                                                            value={assignData.hora_fin} 
+                                                            onChange={e => setAssignData({...assignData, hora_fin: e.target.value})} 
+                                                            required 
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center justify-between pt-2">
+                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">¿Incluye Refrigerio?</span>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setAssignData({...assignData, has_refrigerio: !assignData.has_refrigerio})}
+                                                            className={`w-10 h-6 rounded-full relative transition-all duration-300 ${assignData.has_refrigerio ? 'bg-indigo-600' : 'bg-slate-800'}`}
+                                                        >
+                                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${assignData.has_refrigerio ? 'left-5' : 'left-1'}`} />
+                                                        </button>
+                                                    </div>
+
+                                                    {assignData.has_refrigerio && (
+                                                        <InputField 
+                                                            label="Horas de Refrigerio" 
+                                                            type="number" 
+                                                            step="0.5" 
+                                                            value={assignData.horas_refrigerio} 
+                                                            onChange={e => setAssignData({...assignData, horas_refrigerio: e.target.value})} 
+                                                            required 
+                                                        />
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="flex justify-end gap-4 pt-4">
                                         <Button type="button" variant="secondary" onClick={() => setIsAssignModalOpen(false)}>Cancelar</Button>

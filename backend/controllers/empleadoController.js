@@ -81,9 +81,42 @@ exports.actualizar = async (req, res) => {
 exports.eliminar = async (req, res) => {
     const { id } = req.params;
     try {
-        // Podríamos hacer un delete lógico cambiando el estado, pero el usuario pidió CRUD
-        await pool.execute('DELETE FROM empleados WHERE id = ?', [id]);
-        res.json({ message: 'Empleado eliminado correctamente' });
+        // 1. Verificar si hay nóminas pendientes de pago
+        const [nominas] = await pool.execute(
+            'SELECT COUNT(*) as count FROM nominas WHERE empleado_id = ? AND estado = "calculado"',
+            [id]
+        );
+        
+        if (nominas[0].count > 0) {
+            return res.status(400).json({ 
+                error: 'No se puede eliminar empleado con nóminas pendientes de pago. Procese las nóminas primero.' 
+            });
+        }
+
+        // 2. Verificar si hay asistencias del mes actual sin procesar
+        const hoy = new Date();
+        const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+        const inicioMes = `${mesActual}-01`;
+        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
+        
+        const [asistenciasPendientes] = await pool.execute(
+            'SELECT COUNT(*) as count FROM asistencias WHERE empleado_id = ? AND fecha BETWEEN ? AND ? AND estado NOT IN ("procesado", "falta", "justificado")',
+            [id, inicioMes, finMes]
+        );
+        
+        if (asistenciasPendientes[0].count > 0) {
+            return res.status(400).json({ 
+                error: 'No se puede eliminar empleado con asistencias pendientes de procesar en el mes actual.' 
+            });
+        }
+
+        // 3. Hacer soft delete (desactivar, no eliminar físicamente)
+        await pool.execute(
+            'UPDATE empleados SET estado = "inactivo", deleted_at = NOW() WHERE id = ?',
+            [id]
+        );
+        
+        res.json({ message: 'Empleado desactivado correctamente. Ya no podrá marcar asistencia ni generar nóminas.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

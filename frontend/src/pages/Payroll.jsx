@@ -95,9 +95,14 @@ const Payroll = () => {
     );
 
     const stats = [
-        { label: 'Total Pagado (Mes)', value: `S/ ${nominas.reduce((acc, n) => acc + parseFloat(n.total_pagar), 0).toLocaleString()}`, icon: Banknote, color: 'text-emerald-400' },
+        { 
+            label: `Total Planilla (${filterPeriodo})`, 
+            value: `S/ ${nominas.reduce((acc, n) => acc + parseFloat(n.total_pagar || 0), 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+            icon: Banknote, 
+            color: 'text-emerald-400' 
+        },
         { label: 'Colaboradores', value: Array.from(new Set(nominas.map(n => n.empleado_id))).length, icon: Users, color: 'text-indigo-400' },
-        { label: 'Periodo Activo', value: periodo, icon: Calendar, color: 'text-amber-400' },
+        { label: 'Periodo Filtrado', value: filterPeriodo, icon: Calendar, color: 'text-amber-400' },
     ];
 
     return (

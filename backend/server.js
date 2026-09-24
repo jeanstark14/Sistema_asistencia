@@ -1,4 +1,12 @@
 require('dotenv').config();
+
+// Validar variables de entorno críticas
+if (!process.env.JWT_SECRET) {
+    console.error('❌ ERROR CRÍTICO: JWT_SECRET no está definido en el archivo .env');
+    console.error('🔧 Solución: Agregue JWT_SECRET=su_clave_segura en el archivo .env');
+    process.exit(1);
+}
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -16,6 +24,10 @@ const authRoutes = require('./routes/auth');
 const authMiddleware = require('./middlewares/authMiddleware');
 const roleMiddleware = require('./middlewares/roleMiddleware');
 
+// Importar servicios para cierre automático
+const cierreService = require('./services/cierreService');
+const cron = require('node-cron');
+
 const app = express();
 const PORT = process.env.PORT || 4000;
 
@@ -29,6 +41,7 @@ app.use('/api/auth', authRoutes);
 
 // Rutas (Protección interna en cada archivo de rutas)
 app.use('/api/biometrico', biometricoRoutes); 
+app.use('/api/kiosco', require('./routes/kiosco'));
 app.use('/api/nomina', nominaRoutes);
 app.use('/api/cierre', cierreRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -50,8 +63,21 @@ app.get('/health', (req, res) => {
     res.json({ status: 'UP', timestamp: new Date() });
 });
 
+// Configurar cierre diario automático a las 23:59
+cron.schedule('59 23 * * *', async () => {
+    console.log('[Cierre Automático] Iniciando procesamiento diario...');
+    try {
+        const resultado = await cierreService.procesarCierre();
+        console.log('[Cierre Automático] Completado exitosamente:', resultado);
+    } catch (error) {
+        console.error('[Cierre Automático] Error en procesamiento:', error.message);
+        // TODO: Implementar notificación por email al administrador
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`=========================================`);
     console.log(`🚀 SERVIDOR ASISTENCIA - PUERTO ${PORT}`);
     console.log(`=========================================`);
+    console.log(`📅 Cierre diario automático configurado: 23:59 diariamente`);
 });

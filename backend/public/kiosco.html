@@ -1,0 +1,1644 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <title>Kiosco de Asistencia</title>
+  <meta name="description" content="Terminal de marcación de asistencia para empleados" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <style>
+    /* ── Variables ─────────────────────────────────────── */
+    :root {
+      --bg: #0a0c10;
+      --bg2: #12151c;
+      --bg3: #1a1f29;
+      --card: rgba(18, 21, 28, 0.65);
+      --card2: rgba(10, 12, 16, 0.85);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-glow: rgba(99, 102, 241, 0.4);
+      --primary: #6366f1;
+      --primary-dk: #4f46e5;
+      --accent: #818cf8;
+      --success: #10b981;
+      --success-dk: #059669;
+      --warning: #f59e0b;
+      --error: #f43f5e;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --pin-btn: rgba(255, 255, 255, 0.02);
+      --pin-btn-h: rgba(99, 102, 241, 0.12);
+      --radius: 20px;
+      --radius-sm: 14px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Animated Background (Indigo Mesh) ──────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(circle 800px at 100px 100px, rgba(99, 102, 241, 0.15), transparent 80%),
+        radial-gradient(circle 600px at 90% 80%, rgba(99, 102, 241, 0.08), transparent 80%),
+        linear-gradient(180deg, #0a0c10 0%, #12151c 100%);
+      pointer-events: none;
+    }
+
+    /* ── Layout ────────────────────────────────────────── */
+    #app {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    .kiosk-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2.5rem;
+      background: rgba(10, 12, 16, 0.7);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+    }
+
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 4px;
+    }
+
+    .brand-name {
+      font-size: 1.3rem;
+      font-weight: 900;
+      font-style: italic;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      line-height: 1.1;
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-top: 0.1rem;
+    }
+
+    .header-right {
+      text-align: right;
+    }
+
+    #clock {
+      font-size: 2.8rem;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #a5b4fc, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    #date-display {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      text-align: right;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Screens (páginas) ─────────────────────────────── */
+    .screen {
+      display: none;
+      flex: 1;
+      overflow: hidden;
+      animation: fadeSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+         SCREEN 1 — Lista de Empleados
+      ════════════════════════════════════════════════════ */
+    #screen-list {
+      flex-direction: column;
+      padding: 2rem 2.5rem;
+      gap: 1.5rem;
+      overflow: hidden;
+    }
+
+    .list-top {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .list-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      flex: 1;
+    }
+
+    .search-wrap {
+      position: relative;
+      width: 320px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1.1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    #search-input {
+      width: 100%;
+      padding: 0.85rem 1rem 0.85rem 3rem;
+      background: rgba(10, 12, 16, 0.4);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    #search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    #search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    #employee-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.25rem;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+      padding-bottom: 1rem;
+      align-content: start;
+    }
+
+    #employee-grid::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #employee-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #employee-grid::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .emp-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .emp-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, transparent 50%, rgba(99, 102, 241, 0.05));
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .emp-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.12);
+    }
+
+    .emp-card:hover::after {
+      opacity: 1;
+    }
+
+    .emp-card:active {
+      transform: translateY(-1px) scale(1);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.08);
+    }
+
+    .emp-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      background: rgba(99, 102, 241, 0.1) !important;
+      border: 1px solid rgba(99, 102, 241, 0.25) !important;
+      color: #818cf8 !important;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    .emp-card:hover .emp-avatar {
+      transform: scale(1.08);
+      border-color: #818cf8 !important;
+    }
+
+    .emp-name {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.35;
+    }
+
+    .emp-area {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    .emp-pin-badge {
+      font-size: 0.65rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 12px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .emp-nopin-badge {
+      font-size: 0.65rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.65rem;
+      border-radius: 12px;
+      background: rgba(244, 63, 94, 0.15);
+      color: #f43f5e;
+      border: 1px solid rgba(244, 63, 94, 0.2);
+    }
+
+    /* Empty / Loading states */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem;
+      color: var(--text-dim);
+    }
+
+    .empty-state .es-icon {
+      font-size: 3rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .empty-state p {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .spinner {
+      width: 38px;
+      height: 38px;
+      border: 3.5px solid rgba(99, 102, 241, 0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1.25rem;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── Screen 2: PIN ─────────────────────────────── */
+    #screen-pin {
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem;
+    }
+
+    .pin-box {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 2rem 2.25rem;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.15rem;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+    }
+
+    .pin-emp-avatar {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    #pin-avatar {
+      width: 80px !important;
+      height: 80px !important;
+      border-radius: 24px !important;
+      font-size: 1.8rem !important;
+      font-weight: 900 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(99, 102, 241, 0.1) !important;
+      border: 1px solid rgba(99, 102, 241, 0.25) !important;
+      color: #818cf8 !important;
+    }
+
+    .pin-emp-name {
+      font-size: 1.45rem;
+      font-weight: 900;
+      font-style: italic;
+      text-transform: uppercase;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .pin-emp-area {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
+      margin-top: 0.25rem;
+    }
+
+    .pin-title {
+      font-size: 0.8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-dim);
+    }
+
+    .pin-dots {
+      display: flex;
+      gap: 0.9rem;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2.5px solid var(--text-dim);
+      background: transparent;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 15px var(--primary);
+      transform: scale(1.1);
+    }
+
+    .pin-dot.error {
+      background: var(--error);
+      border-color: var(--error);
+      box-shadow: 0 0 15px var(--error);
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      20% {
+        transform: translateX(-6px);
+      }
+
+      40% {
+        transform: translateX(6px);
+      }
+
+      60% {
+        transform: translateX(-4px);
+      }
+
+      80% {
+        transform: translateX(4px);
+      }
+    }
+
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      width: 100%;
+    }
+
+    .pin-key {
+      height: 52px;
+      background: var(--pin-btn);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1.5rem;
+      font-weight: 900;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pin-key::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.03);
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+
+    .pin-key:hover {
+      background: var(--pin-btn-h);
+      border-color: var(--primary);
+      transform: scale(1.03);
+    }
+
+    .pin-key:hover::after {
+      opacity: 1;
+    }
+
+    .pin-key:active {
+      transform: scale(0.95);
+      background: rgba(99, 102, 241, 0.25);
+    }
+
+    .pin-key.key-del {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .pin-key.key-enter {
+      font-size: 0.95rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dk));
+      border-color: transparent;
+      color: white;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .pin-key.key-enter:hover {
+      background: linear-gradient(135deg, #818cf8, #4f46e5);
+    }
+
+    .pin-key.key-back {
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.01);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      grid-column: 1 / 4;
+      aspect-ratio: auto;
+      padding: 0.8rem;
+      border-radius: 12px;
+    }
+
+    .pin-error-msg {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--error);
+      text-align: center;
+      min-height: 1.2em;
+      animation: fadeIn 0.25s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* ── Screen 3: Marcación ───────────────────────── */
+    #screen-mark {
+      padding: 2rem 2.5rem;
+      gap: 1.5rem;
+    }
+
+    .mark-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.2rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+
+    .mark-emp-info {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    #mark-avatar {
+      width: 58px !important;
+      height: 58px !important;
+      border-radius: 18px !important;
+      font-size: 1.3rem !important;
+      font-weight: 900 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(99, 102, 241, 0.1) !important;
+      border: 1px solid rgba(99, 102, 241, 0.25) !important;
+      color: #818cf8 !important;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
+    }
+
+    .mark-name {
+      font-size: 1.45rem;
+      font-weight: 900;
+      font-style: italic;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .mark-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 0.25rem;
+    }
+
+    /* Timeline de asistencia */
+    .attendance-timeline {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .atl-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1.1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .atl-item.done {
+      border-color: rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .atl-item.next {
+      border-color: rgba(99, 102, 241, 0.45);
+      background: rgba(99, 102, 241, 0.08);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .atl-label {
+      font-size: 0.65rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+    }
+
+    .atl-item.done .atl-label {
+      color: #34d399;
+    }
+
+    .atl-item.next .atl-label {
+      color: var(--accent);
+    }
+
+    .atl-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    .atl-time {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text-muted);
+    }
+
+    .atl-item.done .atl-time {
+      color: #34d399;
+    }
+
+    .atl-item.next .atl-time {
+      color: var(--accent);
+    }
+
+    /* Botones de acción */
+    .action-btns {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      min-height: 0;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1.5rem;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .action-btn:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.15;
+      cursor: not-allowed;
+      filter: grayscale(0.8);
+    }
+
+    .action-btn:not(:disabled):hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px var(--btn-shadow, rgba(0, 0, 0, 0.4));
+    }
+
+    .action-btn:not(:disabled):active {
+      transform: translateY(-1px);
+    }
+
+    .action-btn.highlight {
+      animation: pulseGlow 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        box-shadow: 0 8px 24px var(--btn-shadow, rgba(0, 0, 0, 0.3));
+      }
+
+      50% {
+        box-shadow: 0 16px 48px var(--btn-shadow, rgba(0, 0, 0, 0.5));
+        transform: scale(1.01);
+      }
+    }
+
+    .btn-entrada {
+      background: linear-gradient(135deg, #10b981, #059669);
+      --btn-shadow: rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-salida {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      --btn-shadow: rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-entrada2 {
+      background: linear-gradient(135deg, #0ea5e9, #0369a1);
+      --btn-shadow: rgba(14, 165, 233, 0.3);
+    }
+
+    .btn-salida2 {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      --btn-shadow: rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .btn-label {
+      font-size: 1.15rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-style: italic;
+      letter-spacing: -0.01em;
+      color: white;
+    }
+
+    .btn-sublabel {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Screen 4: Confirmación ────────────────────── */
+    #screen-confirm {
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem;
+    }
+
+    .confirm-box {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      padding: 3.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.7);
+    }
+
+    .confirm-icon-wrap {
+      width: 90px;
+      height: 90px;
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-size: 2.8rem;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0.4);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .confirm-title {
+      font-size: 2.2rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      background: linear-gradient(135deg, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeUp 0.4s ease 0.1s both;
+    }
+
+    .confirm-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-top: -0.5rem;
+      animation: fadeUp 0.4s ease 0.15s both;
+    }
+
+    .confirm-tipo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      animation: fadeUp 0.4s ease 0.2s both;
+    }
+
+    .confirm-hora {
+      font-size: 4rem;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #a5b4fc, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      animation: fadeUp 0.4s ease 0.25s both;
+    }
+
+    .confirm-countdown {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      animation: fadeUp 0.4s ease 0.3s both;
+    }
+
+    .countdown-bar-wrap {
+      width: 200px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 2px;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease 0.35s both;
+    }
+
+    /* ── Color helpers ───────────────────────────────── */
+    .c-green {
+      color: var(--success);
+    }
+
+    .c-sky {
+      color: #38bdf8;
+    }
+
+    .c-amber {
+      color: var(--warning);
+    }
+
+    .c-violet {
+      color: #c084fc;
+    }
+
+    .c-rose {
+      color: var(--error);
+    }
+
+    .bg-green {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #34d399;
+    }
+
+    .bg-sky {
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.25);
+      color: #38bdf8;
+    }
+
+    .bg-amber {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+    }
+
+    .bg-violet {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      color: #c084fc;
+    }
+
+    /* ── Notificación toast ──────────────────────────── */
+    #toast {
+      position: fixed;
+      background: rgba(15, 32, 64, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      backdrop-filter: blur(20px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 9999;
+      white-space: nowrap;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 900px) {
+      .action-btns {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .attendance-timeline {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      #employee-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .kiosk-header {
+        padding: 0.9rem 1.2rem;
+      }
+
+      #screen-list {
+        padding: 1rem 1.2rem;
+      }
+
+      #clock {
+        font-size: 1.8rem;
+      }
+
+      .action-btns {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ── Header (siempre visible) ───────────────────── -->
+  <div id="app">
+    <header class="kiosk-header">
+      <div class="brand">
+        <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'" />
+        <div>
+          <div class="brand-name">Control de Asistencia</div>
+          <div class="brand-sub">Kiosco de Marcación</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div id="clock">--:--:--</div>
+        <div id="date-display">Cargando...</div>
+      </div>
+    </header>
+
+    <!-- ── Screen 1: Lista de Empleados ─────────────── -->
+    <section class="screen active" id="screen-list">
+      <div class="list-top">
+        <div class="list-title">👋 Selecciona tu nombre</div>
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="Buscar empleado..." autocomplete="off" />
+        </div>
+      </div>
+      <div id="employee-grid">
+        <div class="empty-state">
+          <div class="spinner"></div>
+          <p>Cargando empleados...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Screen 2: PIN ─────────────────────────────── -->
+    <section class="screen" id="screen-pin">
+      <div class="pin-box">
+        <div class="pin-emp-avatar" id="pin-avatar"></div>
+        <div>
+          <div class="pin-emp-name" id="pin-name">—</div>
+          <div class="pin-emp-area" id="pin-area">—</div>
+        </div>
+        <div class="pin-title">Ingresa tu PIN de 5 dígitos</div>
+        <div class="pin-dots">
+          <div class="pin-dot" id="d0"></div>
+          <div class="pin-dot" id="d1"></div>
+          <div class="pin-dot" id="d2"></div>
+          <div class="pin-dot" id="d3"></div>
+          <div class="pin-dot" id="d4"></div>
+        </div>
+        <div class="pin-error-msg" id="pin-error"></div>
+        <div class="pin-keypad">
+          <button class="pin-key" onclick="pinKey('1')">1</button>
+          <button class="pin-key" onclick="pinKey('2')">2</button>
+          <button class="pin-key" onclick="pinKey('3')">3</button>
+          <button class="pin-key" onclick="pinKey('4')">4</button>
+          <button class="pin-key" onclick="pinKey('5')">5</button>
+          <button class="pin-key" onclick="pinKey('6')">6</button>
+          <button class="pin-key" onclick="pinKey('7')">7</button>
+          <button class="pin-key" onclick="pinKey('8')">8</button>
+          <button class="pin-key" onclick="pinKey('9')">9</button>
+          <button class="pin-key key-del" onclick="pinDel()">⌫</button>
+          <button class="pin-key" onclick="pinKey('0')">0</button>
+          <button class="pin-key key-enter" onclick="pinEnter()">OK</button>
+          <button class="pin-key key-back" onclick="goToList()">← Volver</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Screen 3: Marcación ───────────────────────── -->
+    <section class="screen" id="screen-mark">
+      <div class="mark-header">
+        <button class="btn-back" onclick="goToList()">← Volver</button>
+        <div class="mark-emp-info">
+          <div class="mark-avatar" id="mark-avatar"></div>
+          <div>
+            <div class="mark-name" id="mark-name">—</div>
+            <div class="mark-meta" id="mark-meta">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="attendance-timeline" id="timeline"></div>
+
+      <div class="action-btns">
+        <button class="action-btn btn-entrada" id="btn-entrada" onclick="marcar('entrada')" disabled>
+          <span class="btn-icon">✅</span>
+          <span class="btn-label">Entrada</span>
+          <span class="btn-sublabel">Inicio de jornada</span>
+        </button>
+        <button class="action-btn btn-salida" id="btn-salida" onclick="marcar('salida')" disabled>
+          <span class="btn-icon">🍽️</span>
+          <span class="btn-label">Salida Merienda</span>
+          <span class="btn-sublabel">Inicio de refrigerio</span>
+        </button>
+        <button class="action-btn btn-entrada2" id="btn-entrada2" onclick="marcar('entrada2')" disabled>
+          <span class="btn-icon">🔄</span>
+          <span class="btn-label">Regreso Merienda</span>
+          <span class="btn-sublabel">Fin de refrigerio</span>
+        </button>
+        <button class="action-btn btn-salida2" id="btn-salida2" onclick="marcar('salida2')" disabled>
+          <span class="btn-icon">🏁</span>
+          <span class="btn-label">Salida Final</span>
+          <span class="btn-sublabel">Fin de jornada</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Screen 4: Confirmación ────────────────────── -->
+    <section class="screen" id="screen-confirm">
+      <div class="confirm-box">
+        <div class="confirm-icon-wrap" id="conf-icon-wrap">✅</div>
+        <div class="confirm-title" id="conf-title">¡Marcación Registrada!</div>
+        <div class="confirm-name" id="conf-name">—</div>
+        <div class="confirm-tipo" id="conf-tipo">—</div>
+        <div class="confirm-hora" id="conf-hora">--:--</div>
+        <div class="confirm-countdown" id="conf-countdown">Volviendo en 30 segundos...</div>
+        <div class="countdown-bar-wrap">
+          <div class="countdown-bar" id="countdown-bar"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    // ── Configuración ────────────────────────────────
+    const API = ''; // mismo servidor
+    const TIMEOUT_CONFIRM = 30; // segundos en pantalla de confirmación
+
+    // ── Estado ───────────────────────────────────────
+    let empleados = [];
+    let empleadoActual = null;
+    let asistenciaActual = null;
+    let pinBuffer = '';
+    let countdownTimer = null;
+    let inactividadTimer = null;
+
+    // ── Paleta de colores para avatares ─────────────
+    const COLORES = [
+      ['#0ea5e9', '#0369a1'], ['#10b981', '#065f46'], ['#8b5cf6', '#5b21b6'],
+      ['#f59e0b', '#b45309'], ['#ef4444', '#991b1b'], ['#ec4899', '#9d174d'],
+      ['#14b8a6', '#0f766e'], ['#6366f1', '#3730a3'],
+    ];
+
+    function colorForName(name) {
+      let h = 0;
+      for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+      return COLORES[h % COLORES.length];
+    }
+
+    function avatarStyle(name) {
+      const [c1, c2] = colorForName(name);
+      return `background:linear-gradient(135deg,${c1},${c2}); color:white;`;
+    }
+
+    function initials(nombres, apellidos) {
+      return (nombres[0] + apellidos[0]).toUpperCase();
+    }
+
+    // ── Reloj ────────────────────────────────────────
+    const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+    function tickClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('clock').textContent = `${hh}:${mm}:${ss}`;
+      document.getElementById('date-display').textContent =
+        `${DIAS[now.getDay()]}, ${now.getDate()} de ${MESES[now.getMonth()]} de ${now.getFullYear()}`;
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    // ── Navegación entre pantallas ───────────────────
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function goToList() {
+      clearCountdown();
+      clearTimeout(inactividadTimer);
+      pinBuffer = '';
+      empleadoActual = null;
+      asistenciaActual = null;
+      document.getElementById('search-input').value = '';
+      filtrarEmpleados('');
+      showScreen('screen-list');
+    }
+
+    // ── Toast ─────────────────────────────────────────
+    let toastTimer;
+    function toast(msg, dur = 2500) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), dur);
+    }
+
+    // ── Carga de empleados ───────────────────────────
+    async function cargarEmpleados() {
+      try {
+        const res = await fetch(`${API}/api/kiosco/empleados`);
+        if (!res.ok) throw new Error('Error al cargar empleados');
+        const data = await res.json();
+        empleados = data.empleados || [];
+        renderEmpleados(empleados);
+      } catch (err) {
+        document.getElementById('employee-grid').innerHTML = `
+            <div class="empty-state">
+              <div class="es-icon">⚠️</div>
+              <p>Error al conectar con el servidor.<br>Verifica la conexión.</p>
+            </div>`;
+      }
+    }
+
+    function renderEmpleados(lista) {
+      const grid = document.getElementById('employee-grid');
+      if (!lista.length) {
+        grid.innerHTML = `<div class="empty-state"><div class="es-icon">👤</div><p>No hay empleados que coincidan</p></div>`;
+        return;
+      }
+      grid.innerHTML = lista.map(emp => {
+        const ini = initials(emp.nombres, emp.apellidos);
+        const style = avatarStyle(emp.nombres + emp.apellidos);
+        const pinBadge = emp.tiene_pin
+          ? `<span class="emp-pin-badge">🔐 PIN activo</span>`
+          : `<span class="emp-nopin-badge">⚠ Sin PIN</span>`;
+        const turnoText = emp.turno
+          ? `⏰ ${emp.turno.hora_inicio} – ${emp.turno.hora_fin}`
+          : '';
+        return `
+            <div class="emp-card" onclick="seleccionarEmpleado(${emp.id})" id="empcard-${emp.id}">
+              <div class="emp-avatar" style="${style}">${ini}</div>
+              <div class="emp-name">${emp.apellidos}, ${emp.nombres}</div>
+              <div class="emp-area">${emp.area || 'Sin área'}</div>
+              ${pinBadge}
+              ${turnoText ? `<div class="emp-area" style="color:var(--text-dim)">${turnoText}</div>` : ''}
+            </div>`;
+      }).join('');
+    }
+
+    function filtrarEmpleados(q) {
+      const q2 = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const filtrados = empleados.filter(e => {
+        const full = `${e.nombres} ${e.apellidos}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return full.includes(q2);
+      });
+      renderEmpleados(filtrados);
+    }
+
+    document.getElementById('search-input').addEventListener('input', e => filtrarEmpleados(e.target.value));
+
+    // ── Seleccionar empleado → ir a PIN ─────────────
+    function seleccionarEmpleado(id) {
+      const emp = empleados.find(e => e.id === id);
+      if (!emp) return;
+
+      if (!emp.tiene_pin) {
+        toast('⚠️ Este empleado no tiene PIN configurado. Contacta al administrador.');
+        return;
+      }
+
+      empleadoActual = emp;
+      pinBuffer = '';
+      updatePinDots();
+      document.getElementById('pin-error').textContent = '';
+
+      const ini = initials(emp.nombres, emp.apellidos);
+      const style = avatarStyle(emp.nombres + emp.apellidos);
+      const [c1] = colorForName(emp.nombres + emp.apellidos);
+
+      const avatarEl = document.getElementById('pin-avatar');
+      avatarEl.style = style + ` width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; font-weight:800; border:3px solid ${c1};`;
+      avatarEl.textContent = ini;
+
+      document.getElementById('pin-name').textContent = `${emp.nombres} ${emp.apellidos}`;
+      document.getElementById('pin-area').textContent = emp.area || 'Sin área';
+
+      showScreen('screen-pin');
+
+      // Resetear inactividad: si pasa 45s sin completar el PIN, vuelve a la lista
+      clearTimeout(inactividadTimer);
+      inactividadTimer = setTimeout(() => {
+        toast('⏱ Tiempo agotado. Selecciona tu nombre nuevamente.');
+        goToList();
+      }, 45000);
+    }
+
+    // ── PIN input logic ──────────────────────────────
+    function pinKey(digit) {
+      if (pinBuffer.length >= 5) return;
+      pinBuffer += digit;
+      updatePinDots();
+      if (pinBuffer.length === 5) {
+        setTimeout(pinEnter, 200);
+      }
+    }
+
+    function pinDel() {
+      pinBuffer = pinBuffer.slice(0, -1);
+      updatePinDots();
+      document.getElementById('pin-error').textContent = '';
+    }
+
+    function updatePinDots() {
+      for (let i = 0; i < 5; i++) {
+        const dot = document.getElementById(`d${i}`);
+        dot.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+      }
+    }
+
+    async function pinEnter() {
+      if (pinBuffer.length < 5) {
+        document.getElementById('pin-error').textContent = 'Ingresa los 5 dígitos';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/kiosco/verificar-pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empleado_id: empleadoActual.id, pin: pinBuffer })
+        });
+        const data = await res.json();
+
+        if (data.valido) {
+          clearTimeout(inactividadTimer);
+          await mostrarPanelMarcacion();
+        } else {
+          // PIN incorrecto: shake
+          for (let i = 0; i < 5; i++) {
+            document.getElementById(`d${i}`).className = 'pin-dot error';
+          }
+          document.getElementById('pin-error').textContent = '❌ PIN incorrecto. Inténtalo de nuevo.';
+          setTimeout(() => {
+            pinBuffer = '';
+            updatePinDots();
+            document.getElementById('pin-error').textContent = '';
+          }, 1200);
+        }
+      } catch (err) {
+        document.getElementById('pin-error').textContent = '⚠️ Error de conexión';
+      }
+    }
+
+    // Soporte teclado físico para el PIN
+    document.addEventListener('keydown', e => {
+      const screen = document.querySelector('.screen.active');
+      if (!screen || screen.id !== 'screen-pin') return;
+      if (e.key >= '0' && e.key <= '9') pinKey(e.key);
+      else if (e.key === 'Backspace') pinDel();
+      else if (e.key === 'Enter') pinEnter();
+      else if (e.key === 'Escape') goToList();
+    });
+
+    // ── Panel de marcación ──────────────────────────
+    async function mostrarPanelMarcacion() {
+      const emp = empleadoActual;
+      const ini = initials(emp.nombres, emp.apellidos);
+      const style = avatarStyle(emp.nombres + emp.apellidos);
+      const [c1] = colorForName(emp.nombres + emp.apellidos);
+
+      // Avatar
+      const mAvatar = document.getElementById('mark-avatar');
+      mAvatar.style = style + ` border-color:${c1};`;
+      mAvatar.textContent = ini;
+
+      document.getElementById('mark-name').textContent = `${emp.nombres} ${emp.apellidos}`;
+      let meta = emp.area || '';
+      if (emp.turno) meta += (meta ? ' · ' : '') + `Turno: ${emp.turno.hora_inicio}–${emp.turno.hora_fin}`;
+      document.getElementById('mark-meta').textContent = meta || 'Sin área asignada';
+
+      // Cargar asistencia del día
+      try {
+        const res = await fetch(`${API}/api/kiosco/asistencia/${emp.id}`);
+        asistenciaActual = await res.json();
+      } catch {
+        asistenciaActual = { tiene_asistencia: false, siguiente_marcacion: 'entrada' };
+      }
+
+      renderTimeline();
+      renderBotones();
+      showScreen('screen-mark');
+    }
+
+    function fmtHora(datetimeStr) {
+      if (!datetimeStr) return null;
+      const d = new Date(datetimeStr);
+      return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    }
+
+    function renderTimeline() {
+      const asis = asistenciaActual?.asistencia || {};
+      const sig = asistenciaActual?.siguiente_marcacion;
+
+      const items = [
+        { key: 'entrada', label: 'Entrada', icon: '✅', valor: asis.hora_entrada },
+        { key: 'salida', label: 'Salida Merienda', icon: '🍽️', valor: asis.hora_salida },
+        { key: 'entrada2', label: 'Regreso Merienda', icon: '🔄', valor: asis.hora_entrada_2 },
+        { key: 'salida2', label: 'Salida Final', icon: '🏁', valor: asis.hora_salida_2 },
+      ];
+
+      document.getElementById('timeline').innerHTML = items.map(it => {
+        const done = !!it.valor;
+        const next = it.key === sig;
+        const cls = done ? 'done' : next ? 'next' : '';
+        const hora = done ? fmtHora(it.valor) : (next ? 'Pendiente' : '--:--');
+        return `
+            <div class="atl-item ${cls}">
+              <div class="atl-label">${it.label}</div>
+              <div class="atl-icon">${done ? '✅' : (next ? '⏳' : '⬜')}</div>
+              <div class="atl-time">${hora}</div>
+            </div>`;
+      }).join('');
+    }
+
+    function renderBotones() {
+      const sig = asistenciaActual?.siguiente_marcacion;
+      const tipos = ['entrada', 'salida', 'entrada2', 'salida2'];
+
+      tipos.forEach(t => {
+        const btn = document.getElementById(`btn-${t}`);
+        const esNext = t === sig;
+        btn.disabled = !esNext;
+        btn.classList.toggle('highlight', esNext);
+      });
+
+      // Si ya completó todo (null next)
+      if (!sig) {
+        tipos.forEach(t => document.getElementById(`btn-${t}`).disabled = true);
+        toast('✅ Jornada completada. ¡Hasta mañana!', 4000);
+      }
+    }
+
+    // ── Registrar marcación ──────────────────────────
+    async function marcar(tipo) {
+      const btn = document.getElementById(`btn-${tipo}`);
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="btn-icon">⏳</span><span class="btn-label">Procesando...</span>`;
+
+      try {
+        const res = await fetch(`${API}/api/kiosco/marcar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empleado_id: empleadoActual.id, event_type: tipo })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          mostrarConfirmacion(data, tipo);
+        } else {
+          btn.innerHTML = orig;
+          btn.disabled = false;
+          toast(`❌ ${data.error || 'Error al registrar'}`, 3000);
+        }
+      } catch (err) {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+        toast('⚠️ Error de conexión. Intenta de nuevo.', 3000);
+      }
+    }
+
+    // ── Pantalla de confirmación (30 seg) ───────────
+    const TIPO_CONFIG = {
+      entrada: { label: 'Entrada', icon: '✅', cls: 'bg-green', col: 'c-green' },
+      salida: { label: 'Salida a Merienda', icon: '🍽️', cls: 'bg-amber', col: 'c-amber' },
+      entrada2: { label: 'Regreso Merienda', icon: '🔄', cls: 'bg-sky', col: 'c-sky' },
+      salida2: { label: 'Salida Final', icon: '🏁', cls: 'bg-violet', col: 'c-violet' },
+    };
+
+    function mostrarConfirmacion(data, tipo) {
+      const cfg = TIPO_CONFIG[tipo];
+      const emp = empleadoActual;
+
+      // Icono grande con color del botón
+      const iconWrap = document.getElementById('conf-icon-wrap');
+      iconWrap.textContent = cfg.icon;
+      iconWrap.className = `confirm-icon-wrap ${cfg.cls}`;
+
+      document.getElementById('conf-title').textContent = '¡Marcación Registrada!';
+      document.getElementById('conf-name').textContent = `${emp.nombres} ${emp.apellidos}`;
+
+      const tipoEl = document.getElementById('conf-tipo');
+      tipoEl.textContent = cfg.label;
+      tipoEl.className = `confirm-tipo ${cfg.cls}`;
+
+      // Hora actual
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('conf-hora').textContent = `${hh}:${mm}`;
+
+      showScreen('screen-confirm');
+      iniciarCountdown();
+    }
+
+    function iniciarCountdown() {
+      clearCountdown();
+      let remaining = TIMEOUT_CONFIRM;
+      const bar = document.getElementById('countdown-bar');
+      const txt = document.getElementById('conf-countdown');
+      bar.style.transform = 'scaleX(1)';
+
+      txt.textContent = `Volviendo en ${remaining} segundos...`;
+
+      countdownTimer = setInterval(() => {
+        remaining--;
+        bar.style.transform = `scaleX(${remaining / TIMEOUT_CONFIRM})`;
+        txt.textContent = `Volviendo en ${remaining} segundo${remaining !== 1 ? 's' : ''}...`;
+        if (remaining <= 0) {
+          clearCountdown();
+          // Recargar empleados (puede haber cambios) y volver
+          cargarEmpleados();
+          goToList();
+        }
+      }, 1000);
+    }
+
+    function clearCountdown() {
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    }
+
+    // ── Init ─────────────────────────────────────────
+    cargarEmpleados();
+  </script>
+</body>
+
+</html>

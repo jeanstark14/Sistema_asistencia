@@ -23,6 +23,7 @@ router.post('/ping', biometricoController.verificarConexion);
 router.get('/empleados', biometricoController.obtenerEmpleados);
 router.get('/asistencia-actual', biometricoController.obtenerAsistenciaActual);
 router.delete('/limpiar-asistencia', biometricoLimiter, biometricoController.limpiarAsistencia);
+router.delete('/eliminar-marcacion', biometricoLimiter, biometricoController.eliminarMarcacion);
 
 router.get('/monitor', authMiddleware, roleMiddleware(['Administrador', 'admin', 'Admin', 'Monitor', 'moderador', 'Moderador']), async (req, res) => {
     try {

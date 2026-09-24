@@ -328,3 +328,87 @@ exports.limpiarAsistencia = [validarApiKey, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 }];
+
+exports.eliminarMarcacion = [validarApiKey, async (req, res) => {
+    try {
+        const { empleado_id, tipo_marcacion } = req.body;
+        const fecha = new Date().toISOString().split('T')[0];
+
+        if (!empleado_id || !tipo_marcacion) {
+            return res.status(400).json({ error: 'empleado_id y tipo_marcacion son requeridos' });
+        }
+
+        // Determinar qué columna poner en NULL
+        let columna = '';
+        if (tipo_marcacion === 'entrada') columna = 'hora_entrada';
+        else if (tipo_marcacion === 'salida') columna = 'hora_salida';
+        else if (tipo_marcacion === 'entrada2') columna = 'hora_entrada_2';
+        else if (tipo_marcacion === 'salida2') columna = 'hora_salida_2';
+
+        if (!columna) {
+            return res.status(400).json({ error: 'tipo_marcacion inválido' });
+        }
+
+        // Poner la columna en NULL en la tabla asistencias
+        const [result] = await pool.execute(
+            `UPDATE asistencias SET ${columna} = NULL WHERE empleado_id = ? AND fecha = ?`,
+            [empleado_id, fecha]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.json({ message: 'No había asistencia registrada para hoy' });
+        }
+
+        // Obtener el turno asignado y la tolerancia para el recálculo
+        const fechaObj = new Date(fecha + 'T00:00:00');
+        const dayOfWeek = fechaObj.getDay() + 1;
+
+        const [turnos] = await pool.execute(`
+            SELECT 
+                et.empleado_id,
+                et.dia_semana,
+                et.hora_inicio as hora_inicio_custom,
+                et.hora_fin as hora_fin_custom,
+                t.id as turno_id,
+                t.nombre_turno,
+                t.hora_inicio as hora_inicio_default,
+                t.hora_fin as hora_fin_default,
+                t.horas_refrigerio
+            FROM empleado_turno et
+            JOIN turnos t ON et.turno_id = t.id
+            WHERE et.empleado_id = ?
+              AND et.fecha_inicio <= ?
+              AND (et.fecha_fin >= ? OR et.fecha_fin IS NULL)
+              AND t.estado = 'activo'
+        `, [empleado_id, fecha, fecha]);
+
+        const turnosEmpleado = turnos.filter(t => 
+            t.dia_semana === null || t.dia_semana === dayOfWeek
+        );
+        const turnoRaw = turnosEmpleado[0] || null;
+        const turno = turnoRaw ? {
+            turno_id: turnoRaw.turno_id,
+            nombre: turnoRaw.nombre_turno,
+            hora_inicio: turnoRaw.hora_inicio_custom || turnoRaw.hora_inicio_default,
+            hora_fin: turnoRaw.hora_fin_custom || turnoRaw.hora_fin_default,
+            horas_refrigerio: turnoRaw.horas_refrigerio,
+            dia_semana: turnoRaw.dia_semana
+        } : null;
+
+        const [configs] = await pool.execute(
+            'SELECT valor FROM configuraciones WHERE clave = "tolerancia_minutos"'
+        );
+        const tolerancia = parseInt(configs[0]?.valor || '0');
+
+        const asistenciaService = require('../services/asistenciaService');
+        await asistenciaService.recalcularAsistencia(empleado_id, fecha, turno, tolerancia);
+
+        console.log(`[Biométrico] Marcación ${tipo_marcacion} eliminada y asistencia recalculada para emp ${empleado_id} en ${fecha}`);
+        res.json({ message: 'Marcación eliminada y asistencia recalculada correctamente' });
+
+    } catch (error) {
+        console.error('[Biométrico] Error eliminando marcación:', error);
+        res.status(500).json({ error: error.message });
+    }
+}];
+
