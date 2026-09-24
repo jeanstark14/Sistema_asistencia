@@ -1,175 +1,186 @@
-# Sistema de Gestión de Asistencia y Nómina v2.0
+# Sistema de Gestión de Asistencia y Nómina v2.0 🇵🇪
 
-Este proyecto es un sistema integral de gestión de asistencia y nómina para empresas. Incluye control de asistencia mediante dispositivos biométricos, gestión de turnos rotativos, generación automática de nómina y un panel administrativo moderno. El proyecto está desarrollado en español y parece estar orientado al mercado latinoamericano (con referencias a DNI, ubigeo, etc.).
+Sistema integral de gestión de asistencia, control biométrico, kiosco interactivo de marcación y cálculo automatizado de nómina/planillas, diseñado conforme a la normativa laboral peruana.
+
+---
 
 ## 📋 Descripción General
 
-- **Full-stack**: Separación clara entre backend (API REST) y frontend (SPA).
-- **Base de datos**: MySQL con un esquema bien estructurado.
-- **Autenticación**: JWT con roles de usuario.
-- **Integración**: Dispositivos biométricos para marcación de asistencia.
+- **Arquitectura Full-Stack**: Backend desacoplado con API REST (Node.js/Express) y Frontend interactivo SPA (React + Vite).
+- **Múltiples Métodos de Marcación**: 
+  - Marcación mediante dispositivos biométricos en red (ZK / HTTP push).
+  - **Kiosco Web Interactivo** para tablets o terminales táctiles con ingreso de PIN de 5 dígitos.
+  - Simulador web para pruebas de integración de hardware en tiempo real.
+- **Base de Datos Relacional**: MySQL con esquema estructurado e integridad referencial.
+- **Seguridad**: Autenticación JWT con roles, protección contra fuerza bruta (rate limiting) y cifrado bcrypt.
+- **Nómina y Boletas PDF**: Generación automática de planillas, cálculo de horas extras diurnas/nocturnas, tardanzas, AFP/ONP, EsSalud y exportación de boletas en PDF de alta fidelidad con logos corporativos.
+
+---
 
 ## 🚀 Tecnologías Utilizadas
 
-### Frontend (React)
-- **React 18**: Biblioteca base para la interfaz.
-- **Vite**: Herramienta de construcción ultra rápida.
-- **Tailwind CSS v4**: Motor de estilos de última generación para un diseño premium.
-- **Framer Motion**: Animaciones fluidas y micro-interacciones.
-- **Lucide React**: Set de iconos modernos de alta calidad.
-- **React Router DOM**: Routing para navegación SPA.
-- **React Hot Toast**: Notificaciones de usuario.
-- **Axios**: Cliente HTTP para comunicación con la API.
-
-### Backend (Node.js/Express)
-- **Express.js v5.2.1**: Framework web robusto.
-- **MySQL2 v3.19.0**: Cliente MySQL para Node.js.
-- **JWT (jsonwebtoken)**: Autenticación basada en tokens.
-- **bcryptjs**: Hashing seguro de contraseñas.
-- **express-rate-limit**: Protección contra ataques de fuerza bruta.
-- **PDFKit**: Generación de documentos PDF (boletas de pago).
-- **CORS, dotenv**: Configuración y seguridad.
-
-## 🏗️ Arquitectura del Sistema
+### Frontend
+- **React 18** + **Vite**: Rendimiento ultra rápido y desarrollo modular.
+- **Tailwind CSS v4**: Diseño moderno, responsivo y adaptativo.
+- **Framer Motion**: Micro-animaciones e interactividad fluida.
+- **Lucide React**: Iconografía vectorial estilizada.
+- **React Router DOM**: Enrutamiento para SPA.
+- **React Hot Toast**: Notificaciones interactivas.
+- **Axios**: Cliente HTTP para consumo de la API.
 
 ### Backend
-- **Rutas**: Módulos separados para cada funcionalidad (biométrico, nómina, empleados, etc.)
-- **Controladores**: Lógica de negocio organizada por entidad
-- **Servicios**: Capa de servicios para operaciones complejas (asistencia, auditoría, nómina, PDFs)
-- **Middlewares**: Autenticación y control de roles
-- **Configuración**: Conexión a base de datos centralizada
+- **Node.js** + **Express.js v5**: Servidor web y API REST.
+- **MySQL2**: Manejo eficiente de conexiones mediante connection pools.
+- **JWT (jsonwebtoken)** + **bcryptjs**: Autenticación segura y hashing de contraseñas.
+- **express-rate-limit**: Control de frecuencia de peticiones para prevenir abusos.
+- **PDFKit**: Generación dinámica y precisa de boletas de pago y reportes PDF.
+- **dotenv** & **CORS**: Gestión de variables de entorno y políticas de origen cruzado.
 
-### Frontend
-- **Componentes**: Layout administrativo, componentes UI reutilizables
-- **Páginas**: Dashboard, empleados, asistencia, nómina, configuración, etc.
-- **Contexto**: AuthContext para gestión de estado de autenticación
-- **API**: Cliente centralizado para comunicación con backend
-
-### Base de Datos
-El esquema incluye tablas principales como:
-- `usuarios`: Gestión de usuarios del sistema
-- `empleados`: Información de empleados (DNI, salario, etc.)
-- `dispositivos`: Dispositivos biométricos conectados
-- `asistencia_raw`: Registros crudos de marcaciones (inmutable)
-- `turnos`: Configuración de turnos de trabajo
-- `nomina`: Cálculos de nómina
-- `roles`: Sistema de permisos
+---
 
 ## ✨ Funcionalidades Principales
 
-1. **Control de Asistencia**: Integración con dispositivos biométricos
-2. **Gestión de Empleados**: CRUD completo con información personal
-3. **Turnos Rotativos**: Configuración y asignación de horarios
-4. **Nómina Automática**: Cálculo y generación de boletas PDF
-5. **Dashboard**: Panel con métricas y reportes
-6. **Auditoría**: Servicio de logging de acciones
-7. **Configuración**: Parámetros del sistema
-8. **Portal de Empleado**: Vista limitada para empleados
+### 1. 🖥️ Kiosco Interactivo de Marcación (`/kiosco.html`)
+- Diseñado para pantallas táctiles, tablets y navegadores en recepción o puntos de acceso.
+- Teclado numérico virtual y físico con soporte para PIN de 5 dígitos por empleado.
+- Confirmación visual y sonora al registrar Entrada, Refrigerio y Salida.
+- Modo pantalla completa y actualización en tiempo real de hora/fecha.
+- Gestión de PINs directamente desde el módulo de empleados en el panel administrativo.
+
+### 2. 🕒 Control de Asistencia y Biométricos
+- Soporte para eventos de dispositivos biométricos (`/api/biometrico/evento`).
+- **Simulador Biométrico Web** (`/simulator.html`): Interfaz para emular marcaciones de prueba sin necesidad de hardware físico.
+- Registro inmutable en `asistencia_raw` y cálculo automático de asistencia diaria, tardanzas y refrigerios.
+
+### 3. 👥 Gestión de Empleados y Cargos
+- CRUD completo de colaboradores con asignación de turnos, áreas y cargos.
+- Integración de consulta automática de datos por DNI (API externa).
+- Configuración de tipo de régimen pensional (AFP Integra, Habitat, Prima, Profuturo, ONP).
+- Asignación y actualización de PIN para el kiosco de marcación.
+
+### 4. 📅 Turnos y Horarios Rotativos
+- Definición de turnos diurnos, nocturnos y mixtos con tolerancia de entrada y refrigerio.
+- Asignación flexible de turnos fijos o rotativos a colaboradores.
+
+### 5. 💰 Procesamiento de Nómina y Boletas de Pago
+- Cálculo automático de remuneración básica, asignación familiar y días laborados.
+- Desglose preciso de horas extra diurnas (25%) y nocturnas (35%).
+- Deducciones exactas: tardanzas acumuladas en minutos, inasistencias injustificadas, aportes previsionales (AFP / ONP).
+- Aportes del empleador: EsSalud (9%) y seguro de vida ley.
+- **Generación de Boletas PDF**: Emisión de boletas individuales con diseño corporativo y soporte para logos institucionales (`logo.png`, `logo_2.png`).
+
+### 6. 📊 Dashboard Administrativo
+- Visualización de métricas en tiempo real: asistencias del día, tardanzas, ausencias y personal activo.
+
+### 7. 🧹 Scripts de Mantenimiento
+- Scripts de limpieza y reseteo ordenado en `backend/scripts/`:
+  - `node backend/scripts/limpiar_asistencias.js`: Resetea eventos y registros de asistencia manteniendo el catálogo de personal.
+  - `node backend/scripts/limpiar_nominas.js`: Resetea registros y detalles de planillas para pruebas.
+
+---
 
 ## 🛠️ Instalación y Configuración
 
 ### Requisitos Previos
-- Node.js (v16 o superior)
-- MySQL (XAMPP o servidor independiente)
-- NPM o Yarn
+- **Node.js** (v18 o superior)
+- **MySQL / MariaDB** (vía XAMPP o independiente)
+- **Git**
 
-### 1. Configuración de la Base de Datos
-1. Importa el archivo `sistema_asistencia_nomina.sql` en tu servidor MySQL.
-2. Asegúrate de configurar las credenciales en el backend.
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/jeanstark14/Sistema_asistencia.git
+cd Sistema_asistencia
+```
 
-### 2. Configuración del Backend
+### 2. Base de Datos
+1. Inicia el servicio de MySQL (por ejemplo desde el panel de XAMPP).
+2. Crea la base de datos `sistema_asistencia_nomina`.
+3. Importa el archivo principal:
+   ```bash
+   mysql -u root -p sistema_asistencia_nomina < sistema_asistencia_nomina.sql
+   ```
+4. Si requieres habilitar la función de PIN para el kiosco, ejecuta la migración:
+   ```bash
+   mysql -u root -p sistema_asistencia_nomina < backend/add_pin_kiosco.sql
+   ```
+
+### 3. Configuración del Backend
 ```bash
 cd backend
 npm install
 ```
 
-Crea un archivo `.env` en la carpeta `backend` con lo siguiente:
+Crea o edita el archivo `.env` en la raíz de `backend`:
 ```env
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=
 DB_NAME=sistema_asistencia_nomina
 PORT=4000
-JWT_SECRET=tu_secreto_super_seguro
+JWT_SECRET=tu_clave_secreta_segura
+# Opcional para consulta de DNI:
+APIPERU_TOKEN=tu_token_apiperu
 ```
 
-### 3. Configuración del Frontend
+### 4. Configuración del Frontend
 ```bash
-cd frontend
+cd ../frontend
 npm install
 ```
 
-## 🏃 Ejecución del Proyecto
+---
 
-### Iniciar Backend
-```bash
-cd backend
-npm start
-```
-_El servidor correrá en [http://localhost:4000](http://localhost:4000)_
+## 🏃 Ejecución del Sistema
 
-### Iniciar Frontend (Modo Desarrollo)
-```bash
-cd frontend
-npm run dev
-```
-_La aplicación estará disponible en [http://localhost:5173](http://localhost:5173)_
+### Modo Desarrollo
 
-## 🧪 Pruebas del Sistema
+1. **Iniciar Backend** (servidor API + Kiosco + Simulador):
+   ```bash
+   cd backend
+   npm start
+   # o con recarga automática:
+   npm run dev
+   ```
+   - API y estáticos activos en: [http://localhost:4000](http://localhost:4000)
+   - **Kiosco de Marcación**: [http://localhost:4000/kiosco.html](http://localhost:4000/kiosco.html)
+   - **Simulador Biométrico**: [http://localhost:4000/simulator.html](http://localhost:4000/simulator.html)
 
-### Pruebas de Conectividad Biométrica
-Puedes simular el envío de eventos desde un dispositivo biométrico usando el script de prueba:
-```bash
-# Desde la raíz del proyecto
-node backend/tests/test_biometrico.js
-```
-
-### Pruebas Manuales
-1. **Acceso**: Usa las credenciales por defecto (`admin@sistema.com` / `admin123`).
-
-## 🔧 Aspectos Técnicos Destacables
-- **Seguridad**: Autenticación robusta con JWT y rate limiting
-- **Escalabilidad**: Arquitectura modular y servicios separados
-- **Internacionalización**: Soporte para caracteres Unicode (utf8mb4)
-- **Rendimiento**: Índices en base de datos para consultas eficientes
-- **UI/UX**: Interfaz moderna con Tailwind CSS v4 y animaciones
-
-## 📊 Estado del Proyecto
-- **Versión**: 2.0 (desarrollo avanzado)
-- **Madurez**: Solución empresarial completa y profesional
-- **Enfoque**: Automatización e integración tecnológica para gestión de RRHH
-2. **Dashboard**: Verifica que las métricas de empleados y asistencias se carguen correctamente.
-3. **Empleados**: Realiza operaciones CRUD y asigna áreas y cargos.
-4. **Horarios**: Crea un turno rotativo y asígnalo a un colaborador.
-5. **Configuración**: Ajusta los parámetros de tolerancia y factores de horas extra.
+2. **Iniciar Frontend** (Panel Administrativo):
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+   - Aplicación disponible en: [http://localhost:5173](http://localhost:5173)
 
 ---
 
-## 📦 Despliegue (Deployment)
+## 🔑 Credenciales de Acceso por Defecto
 
-### Frontend (Producción)
+- **Usuario Admin**: `admin@sistema.com`
+- **Contraseña**: `admin123`
 
+---
+
+## 📦 Despliegue en Producción
+
+### Frontend
 ```bash
 cd frontend
 npm run build
 ```
+Los archivos optimizados generados en `frontend/dist` pueden ser alojados en Nginx, Apache (ej. htdocs), o servidores estáticos.
 
-Los archivos resultantes en la carpeta `dist` pueden ser servidos por cualquier servidor estático (Nginx, Apache, Vercel).
-
-### Backend (Producción)
-
-Se recomienda el uso de **PM2** para mantener el proceso del servidor activo:
-
+### Backend
+Para entornos de producción se recomienda utilizar **PM2**:
 ```bash
-pm2 start server.js --name "api-asistencia"
+cd backend
+npm install -g pm2
+pm2 start server.js --name "sistema-asistencia-api"
+pm2 save
 ```
 
 ---
 
-## 📄 Características Principales
+## 📄 Licencia
 
-- **Panel Administrativo**: Vista 360 de la operación.
-- **Gestión Organizativa**: Control total de áreas y puestos.
-- **Monitor de Asistencia**: Visualización en tiempo real de marcaciones.
-- **Cierre de Nómina**: Procesamiento automático de horas extra, tardanzas y bonos.
-- **Seguridad**: Rutas protegidas y auditoría de acciones del sistema.
+Este proyecto está bajo la licencia MIT.
